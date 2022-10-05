@@ -1,0 +1,36 @@
+Different sotrage solutions have different metadata capability.
+a single hard drive devices with a basic file system has a basic set
+of metadata capabilityes. for example, a hard drive with an ext3 filesystem
+can withhold the following type of metadata:
+- fs inode relative data
+- client visible metadata, common attributes which include timestamp, creation time, file size, etc
+- file or folder ownership and applied permissions
+
+other more advanced filesystems such as xfs, jfs & zfs are capable of supporting extended attributes.
+the characteristics of the extended attributes varies per solution. in such a case, the following
+types of metadata would exist:
+- fs inode relative data
+- client visible metadata, common attributes which include timestamp, creation time, file size, etc
+- file or folder ownership and applied permissions
+- extended attribues
+
+windows NTFS filesystem has the capability of supporting the common metadata in addition to supporting
+alternate data streams, hence extended attributes. 
+
+Apple AFS filesystem has the capability of supporting the common metadata in addition to supporting
+resource forking (multiple forking, a.k.a. alternate data streams).
+
+More advanced filesystems that exist on purpose intended NAS solutions pertain additional metadata.
+These filesystems store more extensive filesystem details related to the available capabilities and
+capability state per object in the propriatary filesystems. Such solutions would have the following
+collective metadata:
+- fs inode relative data
+- client visible metadata, common attributes which include timestamp, creation time, file size, etc
+- file or folder ownership and applied permissions
+- extended attribues
+- advanced fs feature capability state data
+
+Some file types pertain the capability of retaining application specific metadata such as user session
+and activity on a file. MS word and excel are of the few that are capable of retaining such metadata.
+
+
