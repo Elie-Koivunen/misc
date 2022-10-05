@@ -40,3 +40,6 @@ Data lifecycle management applications collect and enrich metadata from across m
 This collected and enriched data is commonly stored separately within scalable databases and the presentation
 of the data is represented as is, enhanced or in different reporting and orchestration enabled forms.
 These type of solutions often facilitate an API access for more extensive integration.
+
+Additional metadata also exists in the form of system and protocol auditing. In such cases, system access 
+and protocol events are retained and repurposed accordingly.
