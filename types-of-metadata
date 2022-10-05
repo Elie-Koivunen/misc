@@ -34,3 +34,9 @@ Some file types pertain the capability of retaining application specific metadat
 and activity on a file. MS word and excel are of the few that are capable of retaining such metadata.
 
 Some applications retain a separate database where application workflow relative metadata is retained.
+These type of applications may be healthcare or media specific applications.
+
+Data lifecycle management applications collect and enrich metadata from across multiple solutions.
+This collected and enriched data is commonly stored separately within scalable databases and the presentation
+of the data is represented as is, enhanced or in different reporting and orchestration enabled forms.
+These type of solutions often facilitate an API access for more extensive integration.
