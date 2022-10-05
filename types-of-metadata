@@ -33,4 +33,4 @@ collective metadata:
 Some file types pertain the capability of retaining application specific metadata such as user session
 and activity on a file. MS word and excel are of the few that are capable of retaining such metadata.
 
-
+Some applications retain a separate database where application workflow relative metadata is retained.
