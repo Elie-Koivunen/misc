@@ -1,0 +1,7 @@
+https://communities.vmware.com/t5/VMware-Workstation-Pro/Disable-side-channel-mitigations-globally-KB79832/td-p/2905821
+
+Machine wide global settings put the dictionary entry in %PROGRAMDATA%\VMware\VMware Workstation\config.ini.
+This file is set as readonly and requires admin rights to edit.
+User-based global settings %APPDATA%\VMware\Config.ini (but this file does not exist by default).
+Disable Side channel mitigation entry to add
+ulm.disableMitigations = "TRUE"
