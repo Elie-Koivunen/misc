@@ -1,0 +1,27 @@
+@echo off
+
+echo Launching VM ..
+
+"C:\Program Files (x86)\VMware\VMware Workstation\vmrun.exe" start "D:\VM\cls950\cls950n1\cls950n1.vmx"
+timeout /t 10 /nobreak
+"C:\Program Files (x86)\VMware\VMware Workstation\vmrun.exe" start "D:\VM\cls950\cls950n2\cls950n2.vmx"
+timeout /t 10 /nobreak
+"C:\Program Files (x86)\VMware\VMware Workstation\vmrun.exe" start "D:\VM\cls950\cls950n3\cls950n3.vmx"
+timeout /t 10 /nobreak
+echo Launched!
+exit
+
+======================
+
+@echo off
+
+echo Pausing VM ..
+
+"C:\Program Files (x86)\VMware\VMware Workstation\vmrun.exe" pause "D:\VM\cls950\cls950n1\cls950n1.vmx"
+timeout /t 10 /nobreak
+"C:\Program Files (x86)\VMware\VMware Workstation\vmrun.exe" pause "D:\VM\cls950\cls950n2\cls950n2.vmx"
+timeout /t 10 /nobreak
+"C:\Program Files (x86)\VMware\VMware Workstation\vmrun.exe" pause "D:\VM\cls950\cls950n3\cls950n3.vmx"
+timeout /t 10 /nobreak
+echo Paused!
+exit
