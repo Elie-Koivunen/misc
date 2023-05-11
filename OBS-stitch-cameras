@@ -1,0 +1,58 @@
+-- Define the source names for the two camera inputs
+local leftCameraSource = "LeftCamera"
+local rightCameraSource = "RightCamera"
+
+-- Define the dimensions of the final panorama view
+local panoramaWidth = 1920
+local panoramaHeight = 1080
+
+-- Define the curvature of the panorama view
+local curvature = 0.5
+
+-- Create a new scene item to hold the panorama view
+local panoramaItem = obs.obs_scene_add()
+
+-- Create a new transform filter to crop and position the left camera
+local leftTransformFilter = obs.obs_source_create("transform", "LeftTransform")
+obs.obs_source_set_enabled(leftTransformFilter, true)
+obs.obs_source_filter_set_clipping(leftTransformFilter, true)
+obs.obs_source_filter_set_transform(leftTransformFilter, 0, 0, 0, 0.5 + curvature / 2, 1, 0.5 - curvature / 2, 0, 1, 1)
+local leftCameraSourceItem = obs.obs_scene_add(leftCameraSource, panoramaItem)
+obs.obs_sceneitem_add_filter(leftCameraSourceItem, leftTransformFilter)
+
+-- Create a new transform filter to crop and position the right camera
+local rightTransformFilter = obs.obs_source_create("transform", "RightTransform")
+obs.obs_source_set_enabled(rightTransformFilter, true)
+obs.obs_source_filter_set_clipping(rightTransformFilter, true)
+obs.obs_source_filter_set_transform(rightTransformFilter, 0.5 - curvature / 2, 0, 0, 1, 1, 0.5 + curvature / 2, 0.5, 1, 1)
+local rightCameraSourceItem = obs.obs_scene_add(rightCameraSource, panoramaItem)
+obs.obs_sceneitem_add_filter(rightCameraSourceItem, rightTransformFilter)
+
+-- Set the dimensions of the panorama view
+obs.obs_source_set_width(panoramaItem, panoramaWidth)
+obs.obs_source_set_height(panoramaItem, panoramaHeight)
+
+-- Define a function to update the panorama curvature
+function updateCurvature(curvatureValue)
+    curvature = curvatureValue
+    obs.obs_source_filter_set_transform(leftTransformFilter, 0, 0, 0, 0.5 + curvature / 2, 1, 0.5 - curvature / 2, 0, 1, 1)
+    obs.obs_source_filter_set_transform(rightTransformFilter, 0.5 - curvature / 2, 0, 0, 1, 1, 0.5 + curvature / 2, 0.5, 1, 1)
+end
+
+-- Define a function to handle the parameter update
+function handleParameterUpdate(cd, event)
+    if event == obs.OBS_DATA_UPDATED then
+        local curvatureValue = obs.obs_data_get_double(cd, "curvature")
+        updateCurvature(curvatureValue)
+    end
+end
+
+-- Define the parameter
+local curvatureParam = obs.obs_properties_add_float_slider(props, "curvature", "Panorama Curvature", 0, 1, 0.5, 0.01)
+
+-- Set the parameter callback
+obs.obs_property_set_callback(curvatureParam, handleParameterUpdate)
+
+-- Set the panorama view as the current scene
+local currentScene = obs.obs_frontend_get_current_scene()
+obs.obs_scene_set_source(obs.obs_scene_from_source(currentScene), panoramaItem)
