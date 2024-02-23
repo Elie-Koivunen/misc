@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Check for correct usage
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <sourcefile> <outputfile>"
+    exit 1
+fi
+
+# Assign command line arguments to variables
+SOURCEFILE=$1
+OUTPUTFILE=$2
+
+# Check if the source file exists
+if [ ! -f "$SOURCEFILE" ]; then
+    echo "Source file not found: $SOURCEFILE"
+    exit 1
+fi
+
+# Process the file
+while IFS= read -r line; do
+    echo "$line" >> "$OUTPUTFILE"
+    echo "%" >> "$OUTPUTFILE"
+done < "$SOURCEFILE"
+
+echo "Processed file saved as $OUTPUTFILE"
+
+# Note: This script does not handle the case where the last line of the source
+# file should not be followed by a %. If you need to handle that case, you
+# might want to add additional logic to check for the last line.
