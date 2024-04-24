@@ -1,0 +1,45 @@
+# split a 10mb file to multiples of 1mb
+split -b 1M -d 10mb.file 10mb.file-chunk-
+
+# launch find screen session per 
+screen -S chunk-01 -d -m /ifs/data/./mysearch.sh 10mb.file-chunk-01 chunk-log-01.log
+screen -S chunk-02 -d -m /ifs/data/./mysearch.sh 10mb.file-chunk-02 chunk-log-02.log
+screen -S chunk-03 -d -m /ifs/data/./mysearch.sh 10mb.file-chunk-03 chunk-log-03.log
+screen -S chunk-04 -d -m /ifs/data/./mysearch.sh 10mb.file-chunk-04 chunk-log-04.log
+screen -S chunk-05 -d -m /ifs/data/./mysearch.sh 10mb.file-chunk-05 chunk-log-05.log
+
+# mysearch.sh
+#!/bin/sh
+
+# Check if the correct number of arguments is passed
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 pattern_file log_file"
+    exit 1
+fi
+
+# Assign arguments to variables
+pattern_file=$1
+log_file=$2
+output_file="found.txt"
+
+# Check if pattern file exists
+if [ ! -f "$pattern_file" ]; then
+    echo "Pattern file does not exist: $pattern_file"
+    exit 1
+fi
+
+# Check if log file exists
+if [ ! -f "$log_file" ]; then
+    echo "Log file does not exist: $log_file"
+    exit 1
+fi
+
+# Search for patterns in the log file and output to found.txt
+grep -Eif "$pattern_file" "$log_file" > "$output_file"
+
+# Check if the search was successful
+if [ $? -eq 0 ]; then
+    echo "Search completed. Results are in $output_file"
+else
+    echo "No matches found."
+fi
