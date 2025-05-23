@@ -10,6 +10,7 @@ import multiprocessing
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# version 0.05
 # Global flag for interrupt
 stop_requested = False
 
@@ -101,7 +102,7 @@ def generate_fake_image(path, fileformat, target_size):
         with open(path, 'wb') as f:
             f.write(os.urandom(target_size))
 
-def generate_file(index, total, writepath, prefix, fileformat, min_size, max_size, verbose):
+def generate_file(index, total, writepath, prefix, fileformat, min_size, max_size, verbose, batchid):
     global stop_requested
     if stop_requested:
         return 0
@@ -121,7 +122,7 @@ def generate_file(index, total, writepath, prefix, fileformat, min_size, max_siz
     thread_stats[thread_name]["time"] += elapsed
 
     if verbose:
-        print(f"[{thread_name}] [{index + 1}/{total}] Generated {file_path} ({actual_size} bytes) in {elapsed:.2f}s")
+        print(f"[{thread_name}] [{index + 1}/{total}] Generated {file_path} ({actual_size} bytes) in {elapsed:.2f}s BatchID: {batchid}")
     return actual_size
 
 def main():
@@ -132,6 +133,7 @@ def main():
     parser.add_argument('--filesize', type=str, required=True, help='File size range e.g., 1mb-3mb (not exact)')
     parser.add_argument('--fileformat', type=str, default='jpg', help='File format e.g., jpg, bmp, ppm')
     parser.add_argument('--filenameprefix', type=str, default='', help='Prefix for the generated filenames')
+    parser.add_argument('--batchid', type=str, default='', help='Batch identifier for filenames (optional)')
     parser.add_argument('--verbose', action='store_true', help='Display progress and statistics')
     parser.add_argument('--writepath', type=str, default='output_images', help='Directory to write files to')
     parser.add_argument('--threads', type=int, default=multiprocessing.cpu_count(), help='Number of threads to use')
@@ -140,6 +142,9 @@ def main():
     min_size_str, max_size_str = args.filesize.lower().split('-')
     min_size = parse_size(min_size_str)
     max_size = parse_size(max_size_str)
+
+    if args.batchid:
+        args.filenameprefix = f"{args.batchid}_{args.filenameprefix}"
 
     os.makedirs(args.writepath, exist_ok=True)
 
@@ -153,7 +158,7 @@ def main():
             for batch_start in range(0, args.filecount, BATCH_SIZE):
                 futures = [
                     executor.submit(generate_file, i, args.filecount, args.writepath, args.filenameprefix,
-                                    args.fileformat.lower(), min_size, max_size, args.verbose)
+                                    args.fileformat.lower(), min_size, max_size, args.verbose, args.batchid)
                     for i in range(batch_start, min(batch_start + BATCH_SIZE, args.filecount))
                 ]
                 for future in as_completed(futures):
