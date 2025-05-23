@@ -10,7 +10,21 @@ import multiprocessing
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# version 0.05
+# version 0.06
+
+
+#seq 1 4 | xargs -P 4 -I{} \
+#python3 gen-images.py \
+#  --filecount 100 \
+#  --filesize 500kb-1mb \
+#  --fileformat jpg \
+#  --filenameprefix img_ \
+#  --batchid B{} \
+#  --writepath output \
+#  --threads 2 \
+#  --verbose
+
+
 # Global flag for interrupt
 stop_requested = False
 
