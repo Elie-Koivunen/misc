@@ -1,5 +1,3 @@
-﻿Windows Registry Editor Version 5.00
-
 [HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions\Default%20Settings]
 "Present"=dword:00000001
 "TCPKeepalives"=dword:00000001
@@ -8,7 +6,7 @@
 "Font"="Consolas"
 "FontIsBold"=dword:00000000
 "FontCharSet"=dword:00000000
-"FontHeight"=dword:0000000a
+"FontHeight"=dword:0000000e
 "FontQuality"=dword:00000000
 "FontVTMode"=dword:00000004
 "UseSystemColours"=dword:00000000
@@ -52,4 +50,3 @@
 "WideBoldFontHeight"=dword:00000000
 "ShadowBold"=dword:00000000
 "ShadowBoldOffset"=dword:00000001
-
