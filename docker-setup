@@ -1,0 +1,88 @@
+# rpi node 1
+docker swarm init --advertise-addr 192.168.1.11
+
+# rpi node 2
+docker swarm join --token $(docker swarm join-token -q worker) 192.168.1.11:2377
+docker swarm join --token SWMTKN-1-35t6ljnqhzi9sf2k6v8p8fnvhda8zmdvb49byj5y3ltrbc07ur-6wyci2599uyfn6b1mxucimuhd 192.168.1.11:2377
+
+# check status
+docker node ls
+
+# create container realm network
+docker network create --driver overlay --subnet=172.16.254.0/23 my_swarm_network
+
+# install keepalived for floating ip
+sudo apt update && sudo apt install keepalived -y
+
+# configure keepalived
+sudo nano /etc/keepalived/keepalived.conf
+====
+vrrp_instance HAProxy_VIP {
+    state MASTER
+    interface wlan0
+    virtual_router_id 51
+    priority 100
+    authentication {
+        auth_type PASS
+        auth_pass mypassword
+    }
+    virtual_ipaddress {
+        192.168.1.10
+    }
+}
+====
+
+# restart keepalived
+sudo systemctl restart keepalived
+
+# keepalived node 2
+sudo nano /etc/keepalived/keepalived.conf
+====
+vrrp_instance HAProxy_VIP {
+    state BACKUP
+    interface wlan0
+    virtual_router_id 51
+    priority 90
+    authentication {
+        auth_type PASS
+        auth_pass mypassword
+    }
+    virtual_ipaddress {
+        192.168.1.10
+    }
+}
+====
+
+# restart keepalived on node2
+sudo systemctl restart keepalived
+
+
+# install haproxy
+sudo apt install haproxy -y
+
+# configure haproxy on both nodes
+sudo nano /etc/haproxy/haproxy.cfg
+====
+frontend http_frontend
+    bind 192.168.1.10:80
+    default_backend swarm_services
+
+backend swarm_services
+    balance roundrobin
+    server node1 192.168.1.11:80 check
+    server node2 192.168.1.12:80 check
+====
+
+
+# restart haproxy on both nodes
+sudo systemctl restart haproxy
+
+
+
+
+###############################3
+# setup a swarm
+
+docker swarm init --advertise-addr 192.168.1.181
+#check 
+docker info | egrep -i Swarm
