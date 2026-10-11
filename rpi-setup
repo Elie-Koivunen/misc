@@ -1,0 +1,133 @@
+  # setup RPI
+    apt update
+
+  # fanhat drivers
+  mkdir -p /opt/rpi-fanhat
+  cd /opt/rpi-fanhat
+  curl https://download.argon40.com/argonfanhat.sh > argonfanhat.sh
+  bash argonfanhat.sh
+  # reconfigure ssh
+    echo UseDNS no >> /etc/ssh/sshd_config
+    echo PermitRootLogin yes >> /etc/ssh/sshd_config
+    service sshd restart
+
+  # install docker
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+    usermod -aG docker $(whoami)
+    usermod -aG docker foreman
+    apt-get install -y python3-pip docker-compose
+
+####################################################################################################
+# install pihole as a container
+    mkdir -p /opt/stacks/pihole
+    cd /opt/stacks/pihole
+    vi docker-compose.yml
+=======================================
+# docker-compose.yml
+=======================================
+      version: "3"
+
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    network_mode: "host"
+    environment:
+      TZ: "Europe/Helsinki"  # Change to your timezone
+      WEBPASSWORD: "a"  # Set the Pi-hole web admin password
+      PIHOLE_INTERFACE: "wlan0"
+    volumes:
+      - "./etc-pihole:/etc/pihole"
+      - "./etc-dnsmasq.d:/etc/dnsmasq.d"
+    dns:
+      - 127.0.0.1
+      - 192.168.1.1
+    restart: unless-stopped
+    links:
+      - pihole
+
+=======================================
+    sed -i 's/\t/    /g' docker-compose.yml
+    mkdir -p ./etc-pihole ./etc-dnsmasq.d
+    docker-compose down;docker-compose up -d
+    docker ps -as
+####################################################################################################
+# install portainer to manage docker
+mkdir -p /opt/stacks/portainer/data
+cd /opt/stacks/portainer
+
+# optional: sudo chown -R $(whoami):$(whoami) /opt/stacks/portainer
+
+# deploy and run
+docker run -d \
+  -p 8000:8000 \
+  -p 9443:9443 \
+  --name portainer \
+  --restart=always \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /opt/stacks/portainer/data:/data \
+  portainer/portainer-ce:latest
+####################################################################################################
+
+####################################################################################################
+# install grafana stack
+mkdir -p /opt/stacks/stack-grafana/{grafana/grafana-data,influxdb/influxdb-data,telegraph/telegraph-data}
+cd /opt/stacks/stack-grafana
+vi docker-compose.yml
+=======================================
+# docker-compose.yml
+=======================================
+version: "3.9"
+
+services:
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    ports:
+      - "8086:8086"  # InfluxDB web interface
+    environment:
+      INFLUXDB_DB: telegraf  # Default database
+      INFLUXDB_ADMIN_USER: admin
+      INFLUXDB_ADMIN_PASSWORD: adminfluxdb
+      INFLUXDB_USER: telegraf
+      INFLUXDB_USER_PASSWORD: admtelegraf
+    volumes:
+      - /opt/stacks/stack-grafana/influxdb/influxdb-data:/var/lib/influxdb
+
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    depends_on:
+      - influxdb
+    environment:
+      HOST_PROC: /host/proc
+      HOST_SYS: /host/sys
+      HOST_ETC: /host/etc
+    volumes:
+      - /opt/stacks/stack-grafana/telegraph/telegraph-data:/etc/telegraf
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc:/host/etc:ro
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"  # Grafana web interface
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admingrafana
+    volumes:
+      - /opt/stacks/stack-grafana/grafana/grafana-data:/var/lib/grafana
+    depends_on:
+      - influxdb
+
+=======================================
+sed -i 's/\t/    /g' docker-compose.yml
+chown -R $(whoami):$(whoami) /opt/stacks/stack-grafana
+chown -R 472:472 /opt/stacks/stack-grafana/grafana/grafana-data
+docker-compose down;docker-compose up -d
+docker ps -as
+
