@@ -1,0 +1,34 @@
+https://en.wikipedia.org/wiki/Maximum_transmission_unit 
+https://www.dell.com/support/manuals/us/en/04/force10-s4048-on/s4048_on_9.9.0.0_cli_pub/ip-mtu?guid=guid-ac2cd2bc-e9ec-4dd2-89b4-df6dff086a2e&lang=en-us 
+
+
+
+Media for IP transport	Maximum transmission unit (bytes)	Notes
+DS-Lite over PPPoE	1452	Ethernet II MTU (1500) less PPPoE header (8) and IPv6 header (40)
+Ethernet with LLCand SNAP	1492[12]	
+PPPoE v2	1492[15]	Ethernet II MTU (1500) less PPPoE header (8)
+PPPoE jumbo frames	1493 – 9190 or more[16]	Ethernet Jumbo Frame MTU (1501 - 9198) less PPPoE header (8)
+Ethernet v2	1500[11]	Nearly all IP over Ethernet implementations use the Ethernet II frame format.
+Ethernet jumbo frames	1501 – 9216[13] or more[citation needed]	The limit varies by vendor. For correct interoperation, frames should be no larger than the maximum frame size supported by any device on the network segment.[14] Jumbo frames are usually only seen in special-purpose networks.
+IEEE 802.11Wi-Fi (WLAN)	2304	The maximum MSDU size is 2304 before encryption. WEP will add 8 bytes, WPA-TKIP 20 bytes, and WPA2-CCMP 16 bytes.
+FDDI	4352[7]	
+Token Ring (802.5)	4464	
+Internet IPv6 path MTU	At least 1280,[8] max of 64 KiB, but up to 4 GiB with optional jumbogram[9]	Systems must use Path MTU Discovery[10] to find the actual path MTU.
+Internet IPv4 path MTU	At least 68,[5] max of 64 KiB[6]	Systems may use Path MTU Discovery[7] to find the actual path MTU. Routing from larger MTU to smaller MTU causes IP fragmentation.
+
+
+Port Channels:
+
+⦁	All members must have the same link MTU value and the same IP MTU value. 
+⦁	The Port Channel link MTU and IP MTU must be less than or equal to the link MTU and IP MTU values configured on the channel members. For example, if the members have a link MTU of 2100 and an IP MTU 2000, the Port Channel’s MTU values cannot be higher than 2100 for link MTU or 2000 bytes for IP MTU.
+VLANs:
+
+⦁	All members of a VLAN must have same IP MTU value. 
+⦁	Members can have different Link MTU values. Tagged members must have a link MTU 4 bytes higher than untagged members to account for the packet tag. 
+⦁	The VLAN link MTU and IP MTU must be less than or equal to the link MTU and IP MTU values configured on the VLAN members. For example, the VLAN contains tagged members with Link MTU of 1522 and IP MTU of 1500 and untagged members with Link MTU of 1518 and IP MTU of 1500. The VLAN’s Link MTU cannot be higher than 1518 bytes and its IP MTU cannot be higher than 1500 bytes.
+The following describes the difference between Link MTU and IP MTU.
+Layer 2 Overhead	Difference between Link MTU and IP MTU
+Ethernet (untagged)	18 bytes
+VLAN Tag	Tag 22 bytes
+Untagged Packet with VLAN-Stack Header	22 bytes
+Tagged Packet with VLAN-Stack Header	26 bytes
