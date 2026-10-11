@@ -1,0 +1,34 @@
+sysctl -w net.ipv4.ip_forward=1
+echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.d/ip_forward.conf
+
+firewall-cmd --get-default-zone
+firewall-cmd --get-active-zones
+echo "zone=public" >> /etc/sysconfig/network-scripts/ifcfg-ens33
+echo "zone=internal" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+
+systemctl enable firewalld
+systemctl start firewalld
+systemctl status firewalld
+
+firewall-cmd --permanent --zone=internal --change-interface=ens34
+firewall-cmd --permanent --zone=public --change-interface=ens33
+firewall-cmd --get-active-zones
+firewall-cmd --get-default-zone
+
+firewall-cmd --get-services
+firewall-cmd --permanent --zone=public --add-service=ssh
+firewall-cmd --permanent --zone=public --add-service=dhcpv6-client
+firewall-cmd --zone=public --add-masquerade --permanent
+
+firewall-cmd --permanent --zone=internal --add-source=192.168.255.0/24
+firewall-cmd --permanent --zone=internal --add-port=0-65535/tcp
+firewall-cmd --permanent --zone=internal --add-port=0-65535/udp
+firewall-cmd --permanent --remove-icmp-block-inversion
+firewall-cmd --permanent --remove-icmp-block=echo-reply
+firewall-cmd --permanent --remove-icmp-block=echo-reply
+firewall-cmd --permanent --remove-icmp-block=time-exceeded
+firewall-cmd --permanent --remove-icmp-block=port-unreachable
+firewall-cmd --permanent --remove-icmp-block=fragmentation-needed
+firewall-cmd --permanent --remove-icmp-block=packet-too-big
+
+firewall-cmd --permanent --direct --passthrough ipv4 -t nat -I POSTROUTING -o ens33 -j MASQUERADE -s 192.168.255.0/24
