@@ -1,0 +1,248 @@
+# create a new private network dedicated to the k8s nodes and isilon simulator
+  - vmnet set to HOST-ONLY (e.g. vmnet7)
+  - # deselect "connect to a host adapter to this network"
+  - deselect "Use local DHCP"
+  - for reference, set the subnet to 192.168.255.0 with a netmask of 255.255.255.0
+
+# install linux vm instances on vmware workstation to run on
+  # install a vm to act as a netservices
+    # the netservices would deployed as the following:
+  - 2 core
+  - 1gb ram
+  - network1 (select NAT)
+  - network2 (select custom -> vmnet7)
+  - select your linux distro image (centos7 minimal)
+  # install linux vm instances on vmware workstation to run on
+ 
+ # install a vm to act as a monitor
+    # the net services would deployed as the following:
+  - 4 core
+  - 4gb ram
+  - network2 (select custom -> vmnet7)
+  - select your linux distro image (centos7 k8s)
+  
+  # install several vm to act as nodes, personal preferense is an odd number of nodes
+  # each node-vm would deployed as the following:
+  - 2 core
+  - 2gb ram
+  - network (select custom -> vmnet7)
+  - select your linux distro image (centos7 k8s)
+  
+# on each vm linux installation:
+  - select minimal installation
+  - select timezone (gmt+2)
+  - select disk to install on
+  - deselect kdump
+  - select desired keyboard layout ( finnish )
+  - enable network interface
+  - set root password a
+  - create an account "mandalorian" with password a and designated as administrator (or post installation run# usermod -aG wheel mandalorian)
+
+# on the netservices vm:
+  - modify ssh #
+    echo "UseDNS no" >> /etc/ssh/sshd_config
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+    systemctl restart sshd.service
+  
+  - disable the firewall
+     - Disable Firewalld
+     systemctl disable firewalld
+     - Stop Firewalld
+     systemctl stop firewalld
+     - Check the Status of Firewalld
+     systemctl status firewalld
+
+  - disable selinux
+    - check
+    sestatus
+    setenforce 0
+    sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
+    sestatus
+  - set timezone
+    timedatectl set-timezone Europe/Helsinki
+    timedatectl status
+
+  - configure second interface#
+    - list devices (centos specific)
+    nmcli -p dev
+    - edit network script for the second interface
+    mv /etc/sysconfig/network-scripts/ifcfg-ens34 /etc/sysconfig/network-scripts/bak-ifcfg-ens34-bak
+    echo "NAME=ens34" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "TYPE=Ethernet" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "BOOTPROTO=none" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "IPADDR=192.168.255.5" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "PREFIX=24" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "#GATEWAY=192.168.255.5" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "DNS1=192.168.255.5" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "DEFROUTE=yes" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "IPV4_FAILURE_FATAL=no" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "# Disable ipv6 #" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "IPV6INIT=no" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "IPV6INIT=no" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "IPV6_AUTOCONF=no" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "IPV6_DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "IPV6_FAILURE_FATAL=no" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "IPV6_ADDR_GEN_MODE=stable-privacy" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "UUID=32bf4491-ca99-44f3-bb90-3a06f877a285" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "DEVICE=ens34" >> /etc/sysconfig/network-scripts/ifcfg-ens34
+    echo "ONBOOT=yes" >> /etc/sysconfig/network-scripts/ifcfg-ens34   
+    - restart networking services:
+    systemctl restart network
+    - confirm setup
+    nmcli -p dev
+    ip a s
+    ip r
+    cat /etc/resolv.conf    
+  - configure dhcpd for pxe
+    mv /etc/dhcp/dhcpd.conf /etc/dhcp/bak-dhcpd.conf-bak
+    echo "# DHCP Server Configuration file." >> /etc/dhcp/dhcpd.conf
+    echo "ddns-update-style interim;" >> /etc/dhcp/dhcpd.conf
+    echo "ignore client-updates;" >> /etc/dhcp/dhcpd.conf
+    echo "authoritative;" >> /etc/dhcp/dhcpd.conf
+    echo "allow booting;" >> /etc/dhcp/dhcpd.conf
+    echo "allow bootp;" >> /etc/dhcp/dhcpd.conf
+    echo "allow unknown-clients;" >> /etc/dhcp/dhcpd.conf
+    echo "" >> /etc/dhcp/dhcpd.conf
+    echo "# internal subnet for my DHCP Server" >> /etc/dhcp/dhcpd.conf
+    echo "subnet 192.168.255.0 netmask 255.255.255.0 {" >> /etc/dhcp/dhcpd.conf
+    echo "range 192.168.255.101 192.168.255.130;" >> /etc/dhcp/dhcpd.conf
+    echo "option domain-name-servers 192.168.255.5;" >> /etc/dhcp/dhcpd.conf
+    echo "option domain-name \"pxe.q8s.vlab\";" >> /etc/dhcp/dhcpd.conf
+    echo "option routers 192.168.255.5;" >> /etc/dhcp/dhcpd.conf
+    echo "option broadcast-address 192.168.255.255;" >> /etc/dhcp/dhcpd.conf
+    echo "default-lease-time 600;" >> /etc/dhcp/dhcpd.conf
+    echo "max-lease-time 7200;" >> /etc/dhcp/dhcpd.conf
+    echo "" >> /etc/dhcp/dhcpd.conf
+    echo "# IP of PXE Server" >> /etc/dhcp/dhcpd.conf
+    echo "next-server 192.168.255.5;" >> /etc/dhcp/dhcpd.conf
+    echo "filename \"pxelinux.0\";" >> /etc/dhcp/dhcpd.conf
+    echo "}" >> /etc/dhcp/dhcpd.conf
+  
+  - configure tftp
+    mv /etc/xinetd.d/tftp /root/bak-tftp-bak
+    echo "service tftp" >> /etc/xinetd.d/tftp
+    echo "{" >> /etc/xinetd.d/tftp
+    echo "        socket_type             = dgram" >> /etc/xinetd.d/tftp
+    echo "        protocol                = udp" >> /etc/xinetd.d/tftp
+    echo "        wait                    = yes" >> /etc/xinetd.d/tftp
+    echo "        user                    = root" >> /etc/xinetd.d/tftp
+    echo "        server                  = /usr/sbin/in.tftpd" >> /etc/xinetd.d/tftp
+    echo "        server_args             = -s /var/lib/tftpboot" >> /etc/xinetd.d/tftp
+    echo "        disable                 = no" >> /etc/xinetd.d/tftp
+    echo "        per_source              = 11" >> /etc/xinetd.d/tftp
+    echo "        cps                     = 100 2" >> /etc/xinetd.d/tftp
+    echo "        flags                   = IPv4" >> /etc/xinetd.d/tftp
+    echo "}" >> /etc/xinetd.d/tftp
+
+    All the network boot related files are to be placed in tftp root directory “/var/lib/tftpboot”
+    copy required network boot files in ‘/var/lib/tftpboot/’
+    cp -v /usr/share/syslinux/pxelinux.0 /var/lib/tftpboot
+    cp -v /usr/share/syslinux/menu.c32 /var/lib/tftpboot
+    cp -v /usr/share/syslinux/memdisk /var/lib/tftpboot
+    cp -v /usr/share/syslinux/mboot.c32 /var/lib/tftpboot
+    cp -v /usr/share/syslinux/chain.c32 /var/lib/tftpboot
+    mkdir /var/lib/tftpboot/pxelinux.cfg
+    mkdir /var/lib/tftpboot/networkboot
+
+    copy the distro files to the tftpboot path
+    mkdir /mnt/cdrom
+    mount -o loop CentOS-7-x86_64-DVD-1511.iso /mnt/cdrom
+    cd /mnt/cdrom
+    cp -av * /var/ftp/pub/
+    cp /mnt/cdrom/images/pxeboot/vmlinuz /var/lib/tftpboot/networkboot/
+    cp /mnt/cdrom/images/pxeboot/initrd.img /var/lib/tftpboot/networkboot/
+    umount /mnt/cdrom
+    
+  - create kickstart and PXE menu
+    - hash the root password so it can be used in the kickstart file
+      openssl passwd -1 a
+          $1$PlIWL.7S$QXthlBMuPyN7jj3RF2BLp.
+    - create kickstart file
+      echo "#platform=x86, AMD64, or Intel EM64T" >> /var/ftp/pub/centos7.cfg
+      echo "#version=DEVEL" >> /var/ftp/pub/centos7.cfg
+      echo "# Firewall configuration" >> /var/ftp/pub/centos7.cfg
+      echo "firewall --disabled" >> /var/ftp/pub/centos7.cfg
+      echo "# Install OS instead of upgrade" >> /var/ftp/pub/centos7.cfg
+      echo "install" >> /var/ftp/pub/centos7.cfg
+      echo "# Use FTP installation media" >> /var/ftp/pub/centos7.cfg
+      echo "url --url='ftp://192.168.255.5/pub/'" >> /var/ftp/pub/centos7.cfg
+      echo "# Root password" >> /var/ftp/pub/centos7.cfg
+      echo "rootpw --iscrypted $6$SEIDDz9bkRRLBnzs$PcFSSReM/9fkNcASnNHtsv5b7PpYKMv1vtxf0maKZDkkMc..6sqFPMula1y.FHcVSvZGBQ1hlGQmX./i.1ziN/" >> /var/ftp/pub/centos7.cfg
+      echo "# System authorization information" >> /var/ftp/pub/centos7.cfg
+      echo "auth useshadow passalgo=sha512" >> /var/ftp/pub/centos7.cfg
+      echo "# Use graphical install" >> /var/ftp/pub/centos7.cfg
+      echo "graphical" >> /var/ftp/pub/centos7.cfg
+      echo "firstboot disable" >> /var/ftp/pub/centos7.cfg
+      echo "# Keyboard layouts" >> /var/ftp/pub/centos7.cfg
+      echo "keyboard --vckeymap=fi --xlayouts='fi'" >> /var/ftp/pub/centos7.cfg
+      echo "# System language" >> /var/ftp/pub/centos7.cfg
+      echo "lang en_US.UTF-8" >> /var/ftp/pub/centos7.cfg
+      echo "# SELinux configuration" >> /var/ftp/pub/centos7.cfg
+      echo "selinux disabled" >> /var/ftp/pub/centos7.cfg
+      echo "# Installation logging level" >> /var/ftp/pub/centos7.cfg
+      echo "logging level=info" >> /var/ftp/pub/centos7.cfg
+      echo "# System timezone" >> /var/ftp/pub/centos7.cfg
+      echo "timezone Europe/Helsinki --isUtc --nontp" >> /var/ftp/pub/centos7.cfg
+      echo "# System services" >> /var/ftp/pub/centos7.cfg
+      echo "services --disabled='chronyd'" >> /var/ftp/pub/centos7.cfg
+      echo "user --name=mandalorian --password=$6$D68F/H2YKyg2Dial$od51RxMxdBlcNDfOPe6.vlAJOWX4E7nG1mXHzKCCpoLgC/JuGv6ROvB6YeUNnxiDfFBiiGL6fypZOqoCss1vb0 --iscrypted --gecos='mandalorian'" >> /var/ftp/pub/centos7.cfg
+      echo "user --name=q8s --password=$6$D68F/H2YKyg2Dial$od51RxMxdBlcNDfOPe6.vlAJOWX4E7nG1mXHzKCCpoLgC/JuGv6ROvB6YeUNnxiDfFBiiGL6fypZOqoCss1vb0 --iscrypted --gecos='q8s'" >> /var/ftp/pub/centos7.cfg
+      echo "# System bootloader configuration" >> /var/ftp/pub/centos7.cfg
+      echo "bootloader location=mbr" >> /var/ftp/pub/centos7.cfg
+      echo "clearpart --all --initlabel" >> /var/ftp/pub/centos7.cfg
+      echo "part swap --asprimary --fstype='swap' --size=1024" >> /var/ftp/pub/centos7.cfg
+      echo "part /boot --fstype xfs --size=300" >> /var/ftp/pub/centos7.cfg
+      echo "part pv.01 --size=1 --grow" >> /var/ftp/pub/centos7.cfg
+      echo "volgroup root_vg01 pv.01" >> /var/ftp/pub/centos7.cfg
+      echo "logvol / --fstype xfs --name=lv_01 --vgname=root_vg01 --size=1 --grow" >> /var/ftp/pub/centos7.cfg
+      echo "%packages" >> /var/ftp/pub/centos7.cfg
+      echo "@^minimal" >> /var/ftp/pub/centos7.cfg
+      echo "@core" >> /var/ftp/pub/centos7.cfg
+      echo "%end" >> /var/ftp/pub/centos7.cfg
+      echo "%addon com_redhat_kdump --disable --reserve-mb='auto'" >> /var/ftp/pub/centos7.cfg
+      echo "%end" >> /var/ftp/pub/centos7.cfg
+
+    - create PXE menu
+      echo "default menu.c32" >> /var/lib/tftpboot/pxelinux.cfg/default
+      echo "prompt 0" >> /var/lib/tftpboot/pxelinux.cfg/default
+      echo "timeout 30" >> /var/lib/tftpboot/pxelinux.cfg/default
+      echo "MENU TITLE PXE installation Menu" >> /var/lib/tftpboot/pxelinux.cfg/default
+      echo "LABEL centos7_x64" >> /var/lib/tftpboot/pxelinux.cfg/default
+      echo "MENU LABEL CentOS 7_X64" >> /var/lib/tftpboot/pxelinux.cfg/default
+      echo "KERNEL /networkboot/vmlinuz" >> /var/lib/tftpboot/pxelinux.cfg/default
+      echo "APPEND initrd=/networkboot/initrd.img inst.repo=ftp://192.168.255.5/pub ks=ftp://192.168.255.5/pub/centos7.cfg" >> /var/lib/tftpboot/pxelinux.cfg/default
+  
+     - start and enable service to launch the PXE boot environment
+      systemctl start xinetd
+      systemctl enable xinetd
+      systemctl start dhcpd.service
+      systemctl enable dhcpd.service
+      systemctl start vsftpd
+      systemctl enable vsftpd
+
+  - update to latest release#                   
+    yum update -y
+    
+  - add repository for latest applications:
+    (to install an up to date ansible, the epel repository needs to be added)
+    yum --enablerepo=extras install epel-release -y
+    yum -y install epel-release-7
+    
+  - install screen utility
+    yum -y install screen
+    
+  - install packages for PXEBOOT  
+    yum -y install dhcp tftp tftp-server syslinux vsftpd xinetd
+    
+  - install some clustering related packages# 
+    yum -y install ansible
+
+  - download dban
+   wget -O /tmp/dban.iso https://sourceforge.net/projects/dban/files/dban/dban-2.3.0/dban-2.3.0_i586.iso/download
+
+# on each node vm:
+  - update to latest release#                   yum update -y
+  - install some basic packages#                yum install wget curl net-tools screen iftop iostat iozone iperf expect iptraf -y
+  - install some clustering related packages#   yum install ansible -y
+  
+  
