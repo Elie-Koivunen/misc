@@ -1,0 +1,45 @@
+#list containers
+docker ps      # runnuing containers
+docker ps –a   # offline containers
+
+#list container ID
+docker ps -aq
+
+#list creation date
+docker ps -l
+
+#start a container
+docker start [options] container_id
+
+#create and start a container
+docker run [options] image [command] [argument] 
+
+#give a name to a container
+docker run ––name=Ubuntu_Test ubuntu:14.04
+
+#run container in interactive mode
+docker run –it ––name=Ubuntu_Test ubuntu:14.04
+
+#connect to a container
+docker attach container_id
+
+#stop a container
+docker stop [option] container_id
+
+#shutdown graceperiod
+docker stop --time=20 container_id
+
+#kill a container without waiting for a graceperiod
+docker kill [option] container_id
+
+#stop all running containers
+docker stop $(docker ps –a –q)
+
+#build and run a container
+docker-compose up -d
+
+# run commmand within a container
+docker exec -it pihole /bin/bash
+
+# changing pihole password
+pihole -a -p
